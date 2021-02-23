@@ -17,13 +17,14 @@
 *	Descrp	:	Fixed bugs with misplaced weapon models after selecting a survivor & added admin menu support (!sm_admin)
 *   Link    :   "https://forums.alliedmods.net/showthread.php?p=2399150#post2399150"
 
-*   Edits by:   Sappykun, based on edits by zrmdsxa
-*	Descrp	:	Added support for loading custom models via config file
+*   Edits by:   Sappykun
+*	Descrp	:	Add support for custom models
+*   Link    :   "https://forums.alliedmods.net/showpost.php?p=2714846&postcount=807"
 
 ========================================================================================*/
 #pragma semicolon 1
-#define PLUGIN_VERSION "2.0.0"  
-#define PLUGIN_NAME "Survivor Chat Select 2"
+#define PLUGIN_VERSION "2.0.1"  
+#define PLUGIN_NAME "Survivor Chat Select"
 #define PLUGIN_PREFIX 	"\x01[\x04SCS\x01]"
 
 #include <sourcemod>  
@@ -53,10 +54,10 @@ Handle g_hClientModel;
 public Plugin myinfo =  
 {  
 	name = PLUGIN_NAME,  
-	author = "DeatChaos25, Mi123456 & Merudo",  
-	description = "Select a survivor character by typing their name into the chat.",  
+	author = "DeatChaos25, Mi123456, Merudo, zrmdsxa, Sappykun",  
+	description = "Select a survivor character by typing !csm into the chat.",  
 	version = PLUGIN_VERSION,
-	url = "https://forums.alliedmods.net/showthread.php?p=2399163#post2399163"
+	url = "https://forums.alliedmods.net/showpost.php?p=2714846&postcount=807"
 }  
 
 public void OnPluginStart()  
@@ -122,10 +123,6 @@ void SurvivorChange(int client, Survivor survivor, bool save = true)
 	if (tempprop == ZOEY) {
 		tempprop = GetZoeyProp();
 	}
-	
-
-	//PrintToChat(client, "%s %s %i", survivor.name, survivor.model, tempprop); 
-
 
 	SetEntProp(client, Prop_Send, "m_survivorCharacter", tempprop );
 
@@ -167,6 +164,45 @@ bool IsSurvivor(int client)
 /* This Admin Menu was taken from csm, all credits go to Mi123645 */ 
 public Action InitiateMenuAdmin(int client, int args)  
 { 
+	if (args > 0) {
+		if (args != 2) {
+			ReplyToCommand(client, "Usage: sm_csc <target> <model ID> (%i)", args);
+			return;
+		}
+		
+		char arg1[64]; 
+		char arg2[64];
+		GetCmdArg(1, arg1, sizeof(arg1));
+		GetCmdArg(2, arg2, sizeof(arg2));
+		
+		int targets[MAXPLAYERS];
+		char targetName[MAX_NAME_LENGTH];
+		bool targetNameML;
+		int targetCount = ProcessTargetString(arg1, client, targets, MAXPLAYERS, COMMAND_FILTER_ALIVE, targetName, MAX_NAME_LENGTH, targetNameML);
+		if (targetCount < 1) {
+			ReplyToTargetError(client, targetCount);
+			return;
+		}
+		
+		int prop = StringToInt(arg2);
+		if (!prop && !StrEqual(arg2, "0")) {
+			ReplyToCommand(client, "Usage: sm_csc <target> <model ID>");
+			return;
+		}
+		
+		for (int i = 0; i < targetCount; ++i) {
+			SurvivorChange(targets[i], g_Survivors[prop], false);
+		}
+		
+		if (targetNameML) {
+			ReplyToCommand(client, "Replaced model of %t with %s", targetName, g_Survivors[prop].name);
+		} else {
+			ReplyToCommand(client, "Replaced model of %s with %s", targetName, g_Survivors[prop].name);
+		}
+		
+		return;
+	}
+	
 	if (client == 0)  
 	{ 
 		ReplyToCommand(client, "Menu is in-game only."); 
@@ -280,8 +316,11 @@ public Action ShowMenu(int client, int args)
 	SetMenuTitle(menu, "Choose a character:");
 	
 	for (int i = 0; i < g_iSurvivorsCount; i++) {
-		IntToString(i, sMenuEntry, sizeof(sMenuEntry)); 
-		AddMenuItem(menu, sMenuEntry, g_Survivors[i].name);
+		int flags = ReadFlagString(g_Survivors[i].adminflags);
+		if (GetUserFlagBits(client) & flags == flags) {
+			IntToString(i, sMenuEntry, sizeof(sMenuEntry)); 
+			AddMenuItem(menu, sMenuEntry, g_Survivors[i].name);
+		}
 	}
 	
 	SetMenuExitButton(menu, true);
@@ -394,7 +433,8 @@ public Action Event_PlayerToBot(Handle event, char[] name, bool dontBroadcast)
 	// If bot replace bot (due to bot creation)
 	if (player > 0 && GetClientTeam(player)== 2  &&  IsFakeClient(player) && convarSpawn.BoolValue) 
 	{
-		SurvivorChange(bot, g_Survivors[GetFewestSurvivor(bot)], true);
+		int i = GetFewestSurvivor(bot);
+		SurvivorChange(bot, g_Survivors[i], true);
 	}
 }
 

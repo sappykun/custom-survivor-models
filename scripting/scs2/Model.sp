@@ -2,6 +2,8 @@ enum struct Survivor {
   char name[32];
   char model[128];
   int prop;
+  int custom;
+  char adminflags[16];
 }
 
 Survivor g_Survivors[64];
@@ -17,6 +19,8 @@ void browseKeyValues(KeyValues kv, Survivor[] survivors)
 		kv.GetSectionName(s.name, sizeof(s.name));
 		kv.GetString("model", s.model, sizeof(s.model));
 		s.prop = kv.GetNum("prop");
+		s.custom = kv.GetNum("custom");
+		kv.GetString("adminflags", s.adminflags, sizeof(s.adminflags));
 			
 		survivors[g_iSurvivorsCount] = s;
 	
