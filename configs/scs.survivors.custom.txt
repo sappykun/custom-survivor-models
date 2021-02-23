@@ -1,0 +1,21 @@
+// Prop is the "real" character this model will use
+// (viewmodel, HUD icons, voice).
+// Nick: 		0
+// Rochelle:		1
+// Coach:		2
+// Ellis:		3
+// Bill:		4
+// Zoey:		5
+// Francis:		6
+// Louis:		7
+
+"SurvivorsCustom"
+{
+	"Name of model"
+	{
+		"model" "models/path/to/model.mdl"
+		"prop"	4 // Replace Bill, see above
+		"custom" 1 // Currently unused, might deprecate
+		"adminflags" "c" // Must be able to kick to select this model
+	}
+}
