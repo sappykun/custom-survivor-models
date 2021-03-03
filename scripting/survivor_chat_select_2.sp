@@ -414,7 +414,7 @@ public Action Timer_LoadCookie(Handle timer, int userid)
 			SetEntProp(client, Prop_Send, "m_survivorCharacter", StringToInt(sID));
 			SetEntityModel(client, sModel);
 		}
-		else
+		else if (client && IsClientInGame(client))
 		{ 
 			PrintToChat(client, "%s Couldn't load your default character. Type \x05!csm \x01to choose your \x03default \x01character.", PLUGIN_PREFIX);
 		}
