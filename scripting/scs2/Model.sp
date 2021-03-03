@@ -1,6 +1,6 @@
 enum struct Survivor {
   char name[32];
-  char model[128];
+  char model[PLATFORM_MAX_PATH];
   int prop;
   int custom;
   char adminflags[16];

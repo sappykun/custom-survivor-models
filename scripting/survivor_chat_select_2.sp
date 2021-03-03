@@ -23,8 +23,8 @@
 
 ========================================================================================*/
 #pragma semicolon 1
-#define PLUGIN_VERSION "2.0.1"  
-#define PLUGIN_NAME "Survivor Chat Select"
+#define PLUGIN_VERSION "2.0.2"  
+#define PLUGIN_NAME "Survivor Chat Select 2"
 #define PLUGIN_PREFIX 	"\x01[\x04SCS\x01]"
 
 #include <sourcemod>  
@@ -402,7 +402,7 @@ public void Event_PlayerSpawn(Handle event, const char[] name, bool dontBroadcas
 public Action Timer_LoadCookie(Handle timer, int userid)
 {
 	int client = GetClientOfUserId(userid);
-	char sID[2]; char sModel[64];
+	char sID[2]; char sModel[PLATFORM_MAX_PATH];
 
 	if (client && IsClientInGame(client) && !IsFakeClient(client) && GetClientTeam(client) == 2 && convarCookies.BoolValue && AreClientCookiesCached(client))
 	{
