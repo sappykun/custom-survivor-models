@@ -1,15 +1,13 @@
 enum struct Survivor {
-  char name[32];
+  char name[MAX_NAME_LENGTH];
   char model[PLATFORM_MAX_PATH];
   int prop;
-  int custom;
   char adminflags[16];
 }
 
-Survivor g_Survivors[64];
-int g_iSurvivorsCount = 0;
+ArrayList g_Survivors;
 
-void browseKeyValues(KeyValues kv, Survivor[] survivors)
+void SCS_BrowseKeyValues(KeyValues kv)
 {
 	kv.GotoFirstSubKey();
 
@@ -19,18 +17,15 @@ void browseKeyValues(KeyValues kv, Survivor[] survivors)
 		kv.GetSectionName(s.name, sizeof(s.name));
 		kv.GetString("model", s.model, sizeof(s.model));
 		s.prop = kv.GetNum("prop");
-		s.custom = kv.GetNum("custom");
 		kv.GetString("adminflags", s.adminflags, sizeof(s.adminflags));
 			
-		survivors[g_iSurvivorsCount] = s;
-	
-		g_iSurvivorsCount++;
+		g_Survivors.PushArray(s);
 
 	} while (kv.GotoNextKey(false));
 }
 
 	
-void loadSurvivorsFromConfigFile(const char[] filepath)
+void LoadSurvivorsFromConfigFile(const char[] filepath)
 {
 	char path[PLATFORM_MAX_PATH];
 	BuildPath(Path_SM, path, sizeof(path), filepath);
@@ -38,7 +33,7 @@ void loadSurvivorsFromConfigFile(const char[] filepath)
 
 	if (kv.ImportFromFile(path))
 	{
-		browseKeyValues(kv, g_Survivors);
+		SCS_BrowseKeyValues(kv);
 	}
 	else
 	{
@@ -48,19 +43,21 @@ void loadSurvivorsFromConfigFile(const char[] filepath)
 	delete kv;
 }
 
-void precacheModels()  
+void PrecacheModels()
 {
 	SetConVarInt(FindConVar("precache_all_survivors"), 1);
 
-	for (int i = 0; i < g_iSurvivorsCount; i++) {
-		if (!IsModelPrecached(g_Survivors[i].model))    
-			PrecacheModel(g_Survivors[i].model, false);
+	for (int i = 0; i < g_Survivors.Length; i++) {
+		Survivor s; g_Survivors.GetArray(i, s);
+		if (!IsModelPrecached(s.model))
+			PrecacheModel(s.model, false);
 	}
 }
 
-void debugPrintLoadedModels()  
+void __DebugPrintLoadedModels()
 {
-	for (int i = 0; i < g_iSurvivorsCount; i++) {
-		PrintToServer("%s %s %i", g_Survivors[i].name, g_Survivors[i].model, g_Survivors[i].prop);
+	for (int i = 0; i < g_Survivors.Length; i++) {
+		Survivor s; g_Survivors.GetArray(i, s);
+		PrintToServer("%s %s %i", s.name, s.model, s.prop);
 	}
 }

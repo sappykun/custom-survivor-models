@@ -28,7 +28,7 @@
 #define PLUGIN_PREFIX 	"\x01[\x04SCS\x01]"
 
 #include <sourcemod>  
-#include <sdktools>  
+#include <sdktools>
 #include <clientprefs>
 #include <adminmenu>
 
@@ -51,6 +51,7 @@ int    g_iSelectedClient[MAXPLAYERS+1];
 Handle g_hClientID;
 Handle g_hClientModel;
 
+
 public Plugin myinfo =  
 {  
 	name = PLUGIN_NAME,  
@@ -67,6 +68,7 @@ public void OnPluginStart()
 
 	RegAdminCmd("sm_csc", InitiateMenuAdmin, ADMFLAG_GENERIC, "Brings up a menu to select a client's character"); 
 	RegConsoleCmd("sm_csm", ShowMenu, "Brings up a menu to select a client's character"); 
+	// RegAdminCmd("sm_fileloadtest", FileLoadTest, ADMFLAG_ROOT, "test");
 	
 	HookEvent("player_spawn", Event_PlayerSpawn, EventHookMode_Post);
 	HookEvent("player_bot_replace", Event_PlayerToBot, EventHookMode_Post);
@@ -85,14 +87,23 @@ public void OnPluginStart()
 		OnAdminMenuReady(topmenu);
 	}
 	
-	loadSurvivorsFromConfigFile("configs/scs.survivors.stock.txt");
-	loadSurvivorsFromConfigFile("configs/scs.survivors.custom.txt");
-	RegConsoleCmd("sm_fileloadtest", FileLoadTest, "test");
+	g_Survivors = new ArrayList(sizeof(Survivor));
+
+	Survivor n =  { "Nick", "models/survivors/survivor_gambler.mdl", 0, "" }; g_Survivors.PushArray(n);
+	Survivor r =  { "Rochelle", "models/survivors/survivor_producer.mdl", 1, "" }; g_Survivors.PushArray(r);
+	Survivor c =  { "Coach", "models/survivors/survivor_coach.mdl", 2, "" }; g_Survivors.PushArray(c);
+	Survivor e =  { "Ellis", "models/survivors/survivor_mechanic.mdl", 3, "" }; g_Survivors.PushArray(e);
+	Survivor b =  { "Bill", "models/survivors/survivor_namvet.mdl", 4, "" }; g_Survivors.PushArray(b);
+	Survivor z =  { "Zoey", "models/survivors/survivor_teenangst.mdl", 5, "" }; g_Survivors.PushArray(z);
+	Survivor f =  { "Francis", "models/survivors/survivor_biker.mdl", 6, "" }; g_Survivors.PushArray(f);
+	Survivor l =  { "Louis", "models/survivors/survivor_manager.mdl", 7, "" }; g_Survivors.PushArray(l);
+
+	LoadSurvivorsFromConfigFile("configs/scs.survivors.custom.txt");
 } 
 
 public Action FileLoadTest(int client, int args)  
 {  
-	debugPrintLoadedModels();
+	__DebugPrintLoadedModels();
 }
 
 // *********************************************************************************
@@ -145,7 +156,7 @@ public void OnMapStart()
 	// server crashes.  To prevent ERROR signs, all model files 
 	// (mdl, vvd, vtx, phy) need to be precached. Currently doing this via
 	// EasyDownloader, but what should be done regarding textures?     
-	precacheModels();
+	PrecacheModels();
 } 
 
 bool IsSurvivor(int client)
@@ -189,15 +200,17 @@ public Action InitiateMenuAdmin(int client, int args)
 			ReplyToCommand(client, "Usage: sm_csc <target> <model ID>");
 			return;
 		}
-		
+
+		Survivor s; g_Survivors.GetArray(prop, s);
+
 		for (int i = 0; i < targetCount; ++i) {
-			SurvivorChange(targets[i], g_Survivors[prop], false);
+			SurvivorChange(targets[i], s, false);
 		}
 		
 		if (targetNameML) {
-			ReplyToCommand(client, "Replaced model of %t with %s", targetName, g_Survivors[prop].name);
+			ReplyToCommand(client, "Replaced model of %t with %s", targetName, s.name);
 		} else {
-			ReplyToCommand(client, "Replaced model of %s with %s", targetName, g_Survivors[prop].name);
+			ReplyToCommand(client, "Replaced model of %s with %s", targetName, s.name);
 		}
 		
 		return;
@@ -264,9 +277,11 @@ public Action ShowMenuAdmin(int client, int args)
 	Handle menu = CreateMenu(CharMenuAdmin); 
 	SetMenuTitle(menu, "Choose a character:");
 
-	for (int i = 0; i < g_iSurvivorsCount; i++) {
+	for (int i = 0; i < g_Survivors.Length; i++) {
+		Survivor s; g_Survivors.GetArray(i, s);
+
 		IntToString(i, sMenuEntry, sizeof(sMenuEntry)); 
-		AddMenuItem(menu, sMenuEntry, g_Survivors[i].name);
+		AddMenuItem(menu, sMenuEntry, s.name);
 	}
 	
 	SetMenuExitButton(menu, true); 
@@ -278,10 +293,12 @@ public int CharMenuAdmin(Handle menu, MenuAction action, int client, int param2)
 	switch (action)  
 	{ 
 		case MenuAction_Select:  
-		{ 
+		{
 			char item[8]; 
 			GetMenuItem(menu, param2, item, sizeof(item));
-			SurvivorChange(g_iSelectedClient[client], g_Survivors[StringToInt(item)], false); 
+
+			Survivor s; g_Survivors.GetArray(StringToInt(item), s);
+			SurvivorChange(g_iSelectedClient[client], s, false); 
 		} 
 		case MenuAction_Cancel: { } 
 		case MenuAction_End:    {CloseHandle(menu); } 
@@ -314,12 +331,13 @@ public Action ShowMenu(int client, int args)
 	
 	Handle menu = CreateMenu(CharMenu);
 	SetMenuTitle(menu, "Choose a character:");
-	
-	for (int i = 0; i < g_iSurvivorsCount; i++) {
-		int flags = ReadFlagString(g_Survivors[i].adminflags);
+
+	for (int i = 0; i < g_Survivors.Length; i++) {
+		Survivor s; g_Survivors.GetArray(i, s);
+		int flags = ReadFlagString(s.adminflags);
 		if (GetUserFlagBits(client) & flags == flags) {
 			IntToString(i, sMenuEntry, sizeof(sMenuEntry)); 
-			AddMenuItem(menu, sMenuEntry, g_Survivors[i].name);
+			AddMenuItem(menu, sMenuEntry, s.name);
 		}
 	}
 	
@@ -335,7 +353,9 @@ public int CharMenu(Handle menu, MenuAction action, int param1, int param2)
 		{
 			char item[8];
 			GetMenuItem(menu, param2, item, sizeof(item));
-			SurvivorChange(param1, g_Survivors[StringToInt(item)], true);
+
+			Survivor s; g_Survivors.GetArray(StringToInt(item), s);
+			SurvivorChange(param1, s, true);
 		}
 		case MenuAction_Cancel:
 		{
@@ -434,24 +454,26 @@ public Action Event_PlayerToBot(Handle event, char[] name, bool dontBroadcast)
 	if (player > 0 && GetClientTeam(player)== 2  &&  IsFakeClient(player) && convarSpawn.BoolValue) 
 	{
 		int i = GetFewestSurvivor(bot);
-		SurvivorChange(bot, g_Survivors[i], true);
+		Survivor s; g_Survivors.GetArray(i, s);
+		SurvivorChange(bot, s, true);
 	}
 }
 
 int GetFewestSurvivor(int clientignore = -1) 
 {
 	char Model[128];
-	int[] Survivors = new int[g_iSurvivorsCount];
+	int[] Survivors = new int[g_Survivors.Length];
 
 	for (int client=1; client <= MaxClients; client++)
 	{
 		if (IsClientInGame(client) && GetClientTeam(client) == 2 && client != clientignore)
 		{
 			GetClientModel(client, Model, 128);
-			for (int s = 0; s < g_iSurvivorsCount; s++)
+			for (int i = 0; i < g_Survivors.Length; i++)
 			{
-				if (StrEqual(Model, g_Survivors[s].model)) 
-					Survivors[s] = Survivors[s] + 1;
+				Survivor s; g_Survivors.GetArray(i, s);
+				if (StrEqual(Model, s.model)) 
+					Survivors[i] = Survivors[i] + 1;
 			}		
 		}
 	}
@@ -459,7 +481,7 @@ int GetFewestSurvivor(int clientignore = -1)
 	int minS = 1;
 	int min  = 9999;
 	
-	for (int s = 0; s < g_iSurvivorsCount; s++)
+	for (int s = 0; s < g_Survivors.Length; s++)
 	{
 		if (Survivors[s] < min) 
 		{
@@ -702,4 +724,3 @@ int GetWeaponOffset(char[] weapon)
 
 	return weapon_offset;
 }
-
