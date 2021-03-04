@@ -15,7 +15,6 @@
 	{
 		"model" "models/path/to/model.mdl"
 		"prop"	4 // Replace Bill, see above
-		"custom" 1 // Currently unused, might deprecate
 		"adminflags" "c" // Must be able to kick to select this model
 	}
 }
