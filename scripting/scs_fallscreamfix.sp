@@ -4,6 +4,7 @@
 
 ConVar gCvarBuffer;
 Handle g_hFallVoiceRegex;
+int g_iSurvivorSet;
 char g_sSurvivorVoicePaths[8][] = {	"gambler", "producer", "coach", "mechanic",
 									"namvet", "teengirl", "biker", "manager" };
 
@@ -23,6 +24,11 @@ public void OnPluginStart()
 	AddNormalSoundHook(SoundScreamFix);
 }
 
+public void OnMapStart()
+{
+	g_iSurvivorSet = GetSurvivorSet();
+}
+
 // quick hack for bug where falling screams are randomized when
 // a player's model doesn't match the netprop
 // adapted from https://forums.alliedmods.net/showthread.php?p=2677958 by Edison1318
@@ -37,7 +43,7 @@ public Action SoundScreamFix(int clients[MAXPLAYERS], int &numClients, char samp
 	if (MatchRegex(g_hFallVoiceRegex, sample) > 0) {
 		int prop = GetEntProp(entity, Prop_Send, "m_survivorCharacter", 0);
 
-		if (GetSurvivorSet() == 1) {
+		if (g_iSurvivorSet == 1) {
 			switch (prop) {
 				case 0: prop = 4; // Nick to Bill
 				case 1: prop = 5; // Rochelle to Zoey
