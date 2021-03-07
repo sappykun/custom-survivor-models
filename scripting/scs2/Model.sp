@@ -1,27 +1,35 @@
 enum struct Survivor {
-  char name[MAX_NAME_LENGTH];
-  char model[PLATFORM_MAX_PATH];
-  int prop;
-  char adminflags[16];
+	char name[MAX_NAME_LENGTH];
+	char model[PLATFORM_MAX_PATH];
+	int prop;
+	char adminflags[16];
+
+	void Create(char name[MAX_NAME_LENGTH], char model[PLATFORM_MAX_PATH], int prop, char adminflags[16])
+	{
+		strcopy(this.name, MAX_NAME_LENGTH, name);
+		strcopy(this.model, PLATFORM_MAX_PATH, model);
+		this.prop = prop;
+		strcopy(this.adminflags, 16, adminflags);
+	}
 }
 
 ArrayList g_Survivors;
 
 void SCS_BrowseKeyValues(KeyValues kv)
 {
-	kv.GotoFirstSubKey();
+	if (kv.GotoFirstSubKey()) {
+		do
+		{
+			Survivor s;
+			kv.GetSectionName(s.name, sizeof(s.name));
+			kv.GetString("model", s.model, sizeof(s.model));
+			s.prop = kv.GetNum("prop");
+			kv.GetString("adminflags", s.adminflags, sizeof(s.adminflags));
 
-	do
-	{
-		Survivor s;
-		kv.GetSectionName(s.name, sizeof(s.name));
-		kv.GetString("model", s.model, sizeof(s.model));
-		s.prop = kv.GetNum("prop");
-		kv.GetString("adminflags", s.adminflags, sizeof(s.adminflags));
-			
-		g_Survivors.PushArray(s);
+			g_Survivors.PushArray(s);
 
-	} while (kv.GotoNextKey(false));
+		} while (kv.GotoNextKey(false));
+	}
 }
 
 	

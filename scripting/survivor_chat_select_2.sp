@@ -89,14 +89,14 @@ public void OnPluginStart()
 	
 	g_Survivors = new ArrayList(sizeof(Survivor));
 
-	Survivor n =  { "Nick", "models/survivors/survivor_gambler.mdl", 0, "" }; g_Survivors.PushArray(n);
-	Survivor r =  { "Rochelle", "models/survivors/survivor_producer.mdl", 1, "" }; g_Survivors.PushArray(r);
-	Survivor c =  { "Coach", "models/survivors/survivor_coach.mdl", 2, "" }; g_Survivors.PushArray(c);
-	Survivor e =  { "Ellis", "models/survivors/survivor_mechanic.mdl", 3, "" }; g_Survivors.PushArray(e);
-	Survivor b =  { "Bill", "models/survivors/survivor_namvet.mdl", 4, "" }; g_Survivors.PushArray(b);
-	Survivor z =  { "Zoey", "models/survivors/survivor_teenangst.mdl", 5, "" }; g_Survivors.PushArray(z);
-	Survivor f =  { "Francis", "models/survivors/survivor_biker.mdl", 6, "" }; g_Survivors.PushArray(f);
-	Survivor l =  { "Louis", "models/survivors/survivor_manager.mdl", 7, "" }; g_Survivors.PushArray(l);
+	Survivor n; n.Create("Nick", "models/survivors/survivor_gambler.mdl", 0, ""); g_Survivors.PushArray(n);
+	Survivor r; r.Create("Rochelle", "models/survivors/survivor_producer.mdl", 1, ""); g_Survivors.PushArray(r);
+	Survivor c; c.Create("Coach", "models/survivors/survivor_coach.mdl", 2, ""); g_Survivors.PushArray(c);
+	Survivor e; e.Create("Ellis", "models/survivors/survivor_mechanic.mdl", 3, ""); g_Survivors.PushArray(e);
+	Survivor b; b.Create("Bill", "models/survivors/survivor_namvet.mdl", 4, ""); g_Survivors.PushArray(b);
+	Survivor z; z.Create("Zoey", "models/survivors/survivor_teenangst.mdl", 5, ""); g_Survivors.PushArray(z);
+	Survivor f; f.Create("Francis", "models/survivors/survivor_biker.mdl", 6, ""); g_Survivors.PushArray(f);
+	Survivor l; l.Create("Louis", "models/survivors/survivor_manager.mdl", 7, ""); g_Survivors.PushArray(l);
 
 	LoadSurvivorsFromConfigFile("configs/scs.survivors.custom.txt");
 } 
