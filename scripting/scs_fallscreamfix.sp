@@ -1,21 +1,21 @@
-#include <sourcemod>  
-#include <sdktools> 
+#include <sourcemod>
+#include <sdktools>
 #include <regex>
 
 Handle g_hFallVoiceRegex;
 char g_sSurvivorVoicePaths[8][] = {	"gambler", "producer", "coach", "mechanic",
 									"namvet", "teengirl", "biker", "manager" };
 
-public Plugin myinfo =  
-{  
-	name = "SCS2 Fall Scream Fix",  
-	author = "Sappykun",  
-	description = "Quick and dirty hack for falling survivor screams in SCS2",  
+public Plugin myinfo =
+{
+	name = "SCS2 Fall Scream Fix",
+	author = "Sappykun",
+	description = "Quick and dirty hack for falling survivor screams in SCS2",
 	version = "1.0.0",
 	url = ""
-}  
+}
 
-public void OnPluginStart()  
+public void OnPluginStart()
 {
 	g_hFallVoiceRegex = CompileRegex("player/survivor/voice/\\w+/fall(\\d+).wav", PCRE_CASELESS);
 	AddNormalSoundHook(SoundScreamFix);
@@ -36,9 +36,9 @@ public Action SoundScreamFix(int clients[MAXPLAYERS], int &numClients, char samp
 		int prop = GetEntProp(entity, Prop_Send, "m_survivorCharacter", 0);
 		char number[PLATFORM_MAX_PATH]; GetRegexSubString(g_hFallVoiceRegex, 1, number, PLATFORM_MAX_PATH);
 		Format(sample, sizeof(sample), "player/survivor/voice/%s/fall%s.wav", g_sSurvivorVoicePaths[prop], number);
-		
+
 		return Plugin_Changed;
 	}
-	
+
 	return Plugin_Continue;
 }
