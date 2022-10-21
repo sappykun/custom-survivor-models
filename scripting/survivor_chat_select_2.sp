@@ -42,6 +42,7 @@ ConVar convarZoey;
 ConVar convarSpawn;
 ConVar convarAdminsOnly;
 ConVar convarCookies;
+ConVar convarForceNetProps;
 
 #define     NICK     	0
 #define     ROCHELLE    1
@@ -77,7 +78,8 @@ public void OnPluginStart()
 	convarZoey 		 = CreateConVar("l4d_scs_zoey", "0","Prop for Zoey. 0: Rochelle (windows), 1: Zoey (linux), 2: Nick (fakezoey)",FCVAR_NOTIFY,true, 0.0, true, 2.0);
 	convarSpawn		 = CreateConVar("l4d_scs_botschange", "1","Change new bots to least prevalent survivor? 1:Enable, 0:Disable",FCVAR_NOTIFY,true, 0.0, true, 1.0);
 	convarCookies	 = CreateConVar("l4d_scs_cookies", "1","Store player's survivor? 1:Enable, 0:Disable",FCVAR_NOTIFY,true, 0.0, true, 1.0);
-	
+	convarForceNetProps	 = CreateConVar("l4d_scs_forcenetprops", "1", "Force netprops (real survivors)",FCVAR_NOTIFY,true, 0.0, true, 1.0);
+
 	AutoExecConfig(true, "l4dscs");
 	
 	/* Account for late loading */
@@ -104,6 +106,7 @@ public void OnPluginStart()
 public Action FileLoadTest(int client, int args)  
 {  
 	__DebugPrintLoadedModels();
+	return Plugin_Continue;
 }
 
 // *********************************************************************************
@@ -135,11 +138,12 @@ void SurvivorChange(int client, Survivor survivor, bool save = true)
 		tempprop = GetZoeyProp();
 	}
 
-	SetEntProp(client, Prop_Send, "m_survivorCharacter", tempprop );
+	if (convarForceNetProps.IntValue == 1) {
+		SetEntProp(client, Prop_Send, "m_survivorCharacter", tempprop );
+		ReEquipWeapons(client);
+	}
 
 	SetEntityModel(client, survivor.model);
-
-	ReEquipWeapons(client);
 	
 	if (convarCookies.BoolValue && save)
 	{
@@ -153,9 +157,9 @@ void SurvivorChange(int client, Survivor survivor, bool save = true)
 public void OnMapStart()
 {
 	// TODO: This currently just precaches .mdl files, which prevents
-	// server crashes.  To prevent ERROR signs, all model files 
+	// server crashes.  To prevent ERROR signs, all model files
 	// (mdl, vvd, vtx, phy) need to be precached. Currently doing this via
-	// EasyDownloader, but what should be done regarding textures?     
+	// EasyDownloader, but what should be done regarding textures?
 	PrecacheModels();
 } 
 
@@ -178,7 +182,7 @@ public Action InitiateMenuAdmin(int client, int args)
 	if (args > 0) {
 		if (args != 2) {
 			ReplyToCommand(client, "Usage: sm_csc <target> <model ID> (%i)", args);
-			return;
+			return Plugin_Continue;
 		}
 		
 		char arg1[64]; 
@@ -192,13 +196,13 @@ public Action InitiateMenuAdmin(int client, int args)
 		int targetCount = ProcessTargetString(arg1, client, targets, MAXPLAYERS, COMMAND_FILTER_ALIVE, targetName, MAX_NAME_LENGTH, targetNameML);
 		if (targetCount < 1) {
 			ReplyToTargetError(client, targetCount);
-			return;
+			return Plugin_Continue;
 		}
 		
 		int prop = StringToInt(arg2);
 		if (!prop && !StrEqual(arg2, "0")) {
 			ReplyToCommand(client, "Usage: sm_csc <target> <model ID>");
-			return;
+			return Plugin_Continue;
 		}
 
 		Survivor s; g_Survivors.GetArray(prop, s);
@@ -213,13 +217,13 @@ public Action InitiateMenuAdmin(int client, int args)
 			ReplyToCommand(client, "Replaced model of %s with %s", targetName, s.name);
 		}
 		
-		return;
+		return Plugin_Continue;
 	}
 	
 	if (client == 0)  
 	{ 
 		ReplyToCommand(client, "Menu is in-game only."); 
-		return; 
+		return Plugin_Continue;
 	} 
 	
 	char name[MAX_NAME_LENGTH]; char number[10]; 
@@ -241,6 +245,7 @@ public Action InitiateMenuAdmin(int client, int args)
 	
 	SetMenuExitButton(menu, true); 
 	DisplayMenu(menu, client, MENU_TIME_FOREVER); 
+	return Plugin_Continue;
 } 
 
 public int ShowMenu2(Handle menu, MenuAction action, int client, int param2)  
@@ -267,7 +272,9 @@ public int ShowMenu2(Handle menu, MenuAction action, int client, int param2)
 		{ 
 			CloseHandle(menu); 
 		} 
-	} 
+	}
+
+	return 0;
 } 
 
 public Action ShowMenuAdmin(int client, int args)  
@@ -286,6 +293,7 @@ public Action ShowMenuAdmin(int client, int args)
 	
 	SetMenuExitButton(menu, true); 
 	DisplayMenu(menu, client, MENU_TIME_FOREVER); 
+	return Plugin_Continue;
 } 
 
 public int CharMenuAdmin(Handle menu, MenuAction action, int client, int param2)  
@@ -302,7 +310,9 @@ public int CharMenuAdmin(Handle menu, MenuAction action, int client, int param2)
 		} 
 		case MenuAction_Cancel: { } 
 		case MenuAction_End:    {CloseHandle(menu); } 
-	} 
+	}
+
+	return 0;
 } 
 
 public Action ShowMenu(int client, int args) 
@@ -310,22 +320,22 @@ public Action ShowMenu(int client, int args)
 	if (client == 0) 
 	{
 		ReplyToCommand(client, "[SCS] Character Select Menu is in-game only.");
-		return;
+		return Plugin_Continue;
 	}
 	if (GetClientTeam(client) != 2)
 	{
 		ReplyToCommand(client, "[SCS] Character Select Menu is only available to survivors.");
-		return;
+		return Plugin_Continue;
 	}
 	if (!IsPlayerAlive(client)) 
 	{
 		ReplyToCommand(client, "[SCS] You must be alive to use the Character Select Menu!");
-		return;
+		return Plugin_Continue;
 	}
 	if (GetUserFlagBits(client) == 0 && convarAdminsOnly.BoolValue)
 	{
 		ReplyToCommand(client, "[SCS] Character Select Menu is only available to admins.");
-		return;
+		return Plugin_Continue;
 	}
 	char sMenuEntry[8];
 	
@@ -343,6 +353,7 @@ public Action ShowMenu(int client, int args)
 	
 	SetMenuExitButton(menu, true);
 	DisplayMenu(menu, client, MENU_TIME_FOREVER);
+	return Plugin_Continue;
 }
 
 public int CharMenu(Handle menu, MenuAction action, int param1, int param2) 
@@ -366,6 +377,8 @@ public int CharMenu(Handle menu, MenuAction action, int param1, int param2)
 			CloseHandle(menu);
 		}
 	}
+
+	return 0;
 }
 
 // *********************************************************************************
@@ -431,7 +444,8 @@ public Action Timer_LoadCookie(Handle timer, int userid)
 	
 		if(strlen(sID) && strlen(sModel) && IsModelPrecached(sModel))
 		{
-			SetEntProp(client, Prop_Send, "m_survivorCharacter", StringToInt(sID));
+			if (convarForceNetProps.IntValue == 1)
+				SetEntProp(client, Prop_Send, "m_survivorCharacter", StringToInt(sID));
 			SetEntityModel(client, sModel);
 		}
 		else if (client && IsClientInGame(client))
@@ -439,6 +453,7 @@ public Action Timer_LoadCookie(Handle timer, int userid)
 			PrintToChat(client, "%s Couldn't load your default character. Type \x05!csm \x01to choose your \x03default \x01character.", PLUGIN_PREFIX);
 		}
 	}
+	return Plugin_Stop;
 }
 
 // *********************************************************************************
@@ -457,6 +472,8 @@ public Action Event_PlayerToBot(Handle event, char[] name, bool dontBroadcast)
 		Survivor s; g_Survivors.GetArray(i, s);
 		SurvivorChange(bot, s, true);
 	}
+
+	return Plugin_Continue;
 }
 
 int GetFewestSurvivor(int clientignore = -1) 
@@ -498,7 +515,7 @@ int GetFewestSurvivor(int clientignore = -1)
 // Reequip weapons functions
 // *********************************************************************************
 
-enum()
+enum
 {
 	iClip = 0,
 	iAmmo,
