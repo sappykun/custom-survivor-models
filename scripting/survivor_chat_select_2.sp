@@ -23,7 +23,7 @@
 
 ========================================================================================*/
 #pragma semicolon 1
-#define PLUGIN_VERSION "2.1.0"  
+#define PLUGIN_VERSION "2.2.0"  
 #define PLUGIN_NAME "Survivor Chat Select 2"
 #define PLUGIN_PREFIX 	"\x01[\x04SCS\x01]"
 

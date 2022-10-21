@@ -33,6 +33,8 @@ This particular fork adds:
 
 `l4d_scs_zoey [0/1/2]` - Which prop does Zoey get? 0 is Rochelle (for Windows servers), 1 is Zoey (for Linux servers), 2 is Nick (for Windows servers with FakeZoey)
 
+`l4d_scs_forcenetprops [0/1]` - Do we want to change the actual survivor (netprop) or just their model? Setting this to 0 fixes scoring issues in Versus.
+
 ## CONFIGURATION
 
 A custom survivor config should look like the following:
