@@ -515,16 +515,11 @@ public Action Timer_LoadCookie(Handle timer, int userid)
 		GetClientCookie(client, g_hClientID, sID, sizeof(sID));
 		GetClientCookie(client, g_hClientModel, sModel, sizeof(sModel));
 	
-		if(strlen(sID) && strlen(sModel) && IsModelPrecached(sModel))
-		{
-			if (convarVoiceChangeEnabled.IntValue == 1)
-				SetEntProp(client, Prop_Send, "m_survivorCharacter", StringToInt(sID));
+		if (strlen(sID) && convarVoiceChangeEnabled.BoolValue)
+			SetEntProp(client, Prop_Send, "m_survivorCharacter", StringToInt(sID));
+
+		if(strlen(sModel) && IsModelPrecached(sModel))
 			SetEntityModel(client, sModel);
-		}
-		else if (client && IsClientInGame(client))
-		{
-			PrintToChat(client, "%s Couldn't load your default character. Type \x05!csm \x01to choose your \x03default \x01character.", PLUGIN_PREFIX);
-		}
 	}
 	return Plugin_Stop;
 }
