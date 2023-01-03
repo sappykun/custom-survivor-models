@@ -27,7 +27,7 @@
 #define PLUGIN_NAME "Survivor Chat Select 2"
 #define PLUGIN_PREFIX 	"\x01[\x04SCS\x01]"
 
-#include <sourcemod>  
+#include <sourcemod>
 #include <sdktools>
 #include <clientprefs>
 #include <adminmenu>
@@ -67,21 +67,21 @@ Handle g_hClientID;
 Handle g_hClientModel;
 
 
-public Plugin myinfo =  
-{  
-	name = PLUGIN_NAME,  
-	author = "DeatChaos25, Mi123456, Merudo, zrmdsxa, Sappykun",  
-	description = "Select a survivor character by typing !csm into the chat.",  
+public Plugin myinfo =
+{
+	name = PLUGIN_NAME,
+	author = "DeatChaos25, Mi123456, Merudo, zrmdsxa, Sappykun",
+	description = "Select a survivor character by typing !csm into the chat.",
 	version = PLUGIN_VERSION,
 	url = "https://forums.alliedmods.net/showpost.php?p=2714846&postcount=807"
-}  
+}
 
-public void OnPluginStart()  
-{  
+public void OnPluginStart()
+{
 	g_hClientID 	= RegClientCookie("Player_Character", "Player's default character ID.", CookieAccess_Protected);
 	g_hClientModel  = RegClientCookie("Player_Model", "Player's default character model.", CookieAccess_Protected);
 
-	RegAdminCmd("sm_csc", InitiateMenuAdmin, ADMFLAG_GENERIC, "Brings up a menu to select a client's model"); 
+	RegAdminCmd("sm_csc", InitiateMenuAdmin, ADMFLAG_GENERIC, "Brings up a menu to select a client's model");
 	RegConsoleCmd("sm_csm", ShowModelMenu, "Brings up a menu to select a client's model");
 	RegConsoleCmd("sm_model", ShowModelMenu, "Brings up a menu to select a client's model");
 	RegConsoleCmd("sm_voice", ShowVoiceMenu, "Brings up a menu to select a client's voice (netprop)");
@@ -117,10 +117,10 @@ public void OnPluginStart()
 	Survivor l; l.Create("Louis", "models/survivors/survivor_manager.mdl", 7, ""); g_Survivors.PushArray(l);
 
 	LoadSurvivorsFromConfigFile("configs/scs.survivors.custom.txt");
-} 
+}
 
-public Action FileLoadTest(int client, int args)  
-{  
+public Action FileLoadTest(int client, int args)
+{
 	__DebugPrintLoadedModels();
 	return Plugin_Continue;
 }
@@ -148,7 +148,7 @@ void SurvivorModelChange(int client, Survivor survivor, bool save = true)
 	if (convarCookies.BoolValue && save)
 	{
 		SetClientCookie(client, g_hClientModel, survivor.model);
-		PrintToChat(client, "%s Your \x05default \x01model is now set to \x03%s\x01.", PLUGIN_PREFIX, survivor.name); 
+		PrintToChat(client, "%s Your \x05default \x01model is now set to \x03%s\x01.", PLUGIN_PREFIX, survivor.name);
 	}
 }
 
@@ -181,7 +181,7 @@ public void OnMapStart()
 	// (mdl, vvd, vtx, phy) need to be precached. Currently doing this via
 	// EasyDownloader, but what should be done regarding textures?
 	PrecacheModels();
-} 
+}
 
 bool IsSurvivor(int client)
 {
@@ -196,16 +196,16 @@ bool IsSurvivor(int client)
 // Character Select menu
 // *********************************************************************************	
 
-/* This Admin Menu was taken from csm, all credits go to Mi123645 */ 
-public Action InitiateMenuAdmin(int client, int args)  
-{ 
+/* This Admin Menu was taken from csm, all credits go to Mi123645 */
+public Action InitiateMenuAdmin(int client, int args)
+{
 	if (args > 0) {
 		if (args != 2) {
 			ReplyToCommand(client, "Usage: sm_csc <target> <model ID> (%i)", args);
 			return Plugin_Continue;
 		}
 		
-		char arg1[64]; 
+		char arg1[64];
 		char arg2[64];
 		GetCmdArg(1, arg1, sizeof(arg1));
 		GetCmdArg(2, arg2, sizeof(arg2));
@@ -240,104 +240,104 @@ public Action InitiateMenuAdmin(int client, int args)
 		return Plugin_Continue;
 	}
 	
-	if (client == 0)  
-	{ 
-		ReplyToCommand(client, "Menu is in-game only."); 
+	if (client == 0)
+	{
+		ReplyToCommand(client, "Menu is in-game only.");
 		return Plugin_Continue;
-	} 
+	}
 	
-	char name[MAX_NAME_LENGTH]; char number[10]; 
+	char name[MAX_NAME_LENGTH]; char number[10];
 	
 	Handle menu = CreateMenu(ShowMenu2);
-	SetMenuTitle(menu, "Select a client:"); 
+	SetMenuTitle(menu, "Select a client:");
 	
-	for (int i = 1; i <= MaxClients; i++) 
-	{ 
-		if (!IsClientInGame(i)) continue; 
-		if (GetClientTeam(i) != 2) continue; 
-		//if (i == client) continue; 
+	for (int i = 1; i <= MaxClients; i++)
+	{
+		if (!IsClientInGame(i)) continue;
+		if (GetClientTeam(i) != 2) continue;
+		//if (i == client) continue;
 		
-		Format(name, sizeof(name), "%N", i); 
-		Format(number, sizeof(number), "%i", i); 
-		AddMenuItem(menu, number, name); 
-	} 
+		Format(name, sizeof(name), "%N", i);
+		Format(number, sizeof(number), "%i", i);
+		AddMenuItem(menu, number, name);
+	}
 	
 	
-	SetMenuExitButton(menu, true); 
-	DisplayMenu(menu, client, MENU_TIME_FOREVER); 
+	SetMenuExitButton(menu, true);
+	DisplayMenu(menu, client, MENU_TIME_FOREVER);
 	return Plugin_Continue;
-} 
+}
 
-public int ShowMenu2(Handle menu, MenuAction action, int client, int param2)  
-{ 
-	switch (action)  
-	{ 
-		case MenuAction_Select:  
-		{ 
-			char number[4]; 
-			GetMenuItem(menu, param2, number, sizeof(number)); 
+public int ShowMenu2(Handle menu, MenuAction action, int client, int param2)
+{
+	switch (action)
+	{
+		case MenuAction_Select:
+		{
+			char number[4];
+			GetMenuItem(menu, param2, number, sizeof(number));
 			
-			g_iSelectedClient[client] = StringToInt(number); 
+			g_iSelectedClient[client] = StringToInt(number);
 
-			ShowMenuAdmin(client, 0); 
-		} 
-		case MenuAction_Cancel: 
-		{ 
+			ShowMenuAdmin(client, 0);
+		}
+		case MenuAction_Cancel:
+		{
 			if (param2 == MenuCancel_ExitBack && hTopMenu != INVALID_HANDLE)
 			{
 				DisplayTopMenu(hTopMenu, client, TopMenuPosition_LastCategory);
 			}			
-		} 
-		case MenuAction_End:  
-		{ 
-			CloseHandle(menu); 
-		} 
+		}
+		case MenuAction_End:
+		{
+			CloseHandle(menu);
+		}
 	}
 
 	return 0;
-} 
+}
 
-public Action ShowMenuAdmin(int client, int args)  
-{ 
-	char sMenuEntry[8]; 
+public Action ShowMenuAdmin(int client, int args)
+{
+	char sMenuEntry[8];
 	
-	Handle menu = CreateMenu(ModelMenuAdmin); 
+	Handle menu = CreateMenu(ModelMenuAdmin);
 	SetMenuTitle(menu, "Choose a character:");
 
 	for (int i = 0; i < g_Survivors.Length; i++) {
 		Survivor s; g_Survivors.GetArray(i, s);
 
-		IntToString(i, sMenuEntry, sizeof(sMenuEntry)); 
+		IntToString(i, sMenuEntry, sizeof(sMenuEntry));
 		AddMenuItem(menu, sMenuEntry, s.name);
 	}
 	
-	SetMenuExitButton(menu, true); 
-	DisplayMenu(menu, client, MENU_TIME_FOREVER); 
+	SetMenuExitButton(menu, true);
+	DisplayMenu(menu, client, MENU_TIME_FOREVER);
 	return Plugin_Continue;
-} 
+}
 
-public int ModelMenuAdmin(Handle menu, MenuAction action, int client, int param2)  
-{ 
-	switch (action)  
-	{ 
-		case MenuAction_Select:  
+public int ModelMenuAdmin(Handle menu, MenuAction action, int client, int param2)
+{
+	switch (action)
+	{
+		case MenuAction_Select:
 		{
-			char item[8]; 
+			char item[8];
 			GetMenuItem(menu, param2, item, sizeof(item));
 
 			Survivor s; g_Survivors.GetArray(StringToInt(item), s);
-			SurvivorModelChange(g_iSelectedClient[client], s, false); 
-		} 
-		case MenuAction_Cancel: { } 
-		case MenuAction_End:    {CloseHandle(menu); } 
+			SurvivorModelChange(g_iSelectedClient[client], s, false);
+		}
+		case MenuAction_Cancel: { }
+		case MenuAction_End:    {CloseHandle(menu); }
 	}
 
 	return 0;
-} 
+}
 
-public Action ShowModelMenu(int client, int args) 
+public Action ShowModelMenu(int client, int args)
 {
-	if (client == 0) 
+	if (client == 0)
 	{
 		ReplyToCommand(client, "[SCS] Character Select Menu is in-game only.");
 		return Plugin_Continue;
@@ -356,7 +356,7 @@ public Action ShowModelMenu(int client, int args)
 		Survivor s; g_Survivors.GetArray(i, s);
 		int flags = ReadFlagString(s.adminflags);
 		if (GetUserFlagBits(client) & flags == flags) {
-			IntToString(i, sMenuEntry, sizeof(sMenuEntry)); 
+			IntToString(i, sMenuEntry, sizeof(sMenuEntry));
 			AddMenuItem(menu, sMenuEntry, s.name);
 		}
 	}
@@ -366,9 +366,9 @@ public Action ShowModelMenu(int client, int args)
 	return Plugin_Continue;
 }
 
-public Action ShowVoiceMenu(int client, int args) 
+public Action ShowVoiceMenu(int client, int args)
 {
-	if (client == 0) 
+	if (client == 0)
 	{
 		ReplyToCommand(client, "[SCS] Character Select Menu is in-game only.");
 		return Plugin_Continue;
@@ -393,7 +393,7 @@ public Action ShowVoiceMenu(int client, int args)
 		Survivor s; g_Survivors.GetArray(i, s);
 		int flags = ReadFlagString(s.adminflags);
 		if (GetUserFlagBits(client) & flags == flags) {
-			IntToString(i, sMenuEntry, sizeof(sMenuEntry)); 
+			IntToString(i, sMenuEntry, sizeof(sMenuEntry));
 			AddMenuItem(menu, sMenuEntry, s.name);
 		}
 	}
@@ -404,11 +404,11 @@ public Action ShowVoiceMenu(int client, int args)
 	return Plugin_Continue;
 }
 
-public int ModelMenu(Handle menu, MenuAction action, int param1, int param2) 
+public int ModelMenu(Handle menu, MenuAction action, int param1, int param2)
 {
-	switch (action) 
+	switch (action)
 	{
-		case MenuAction_Select: 
+		case MenuAction_Select:
 		{
 			char item[8];
 			GetMenuItem(menu, param2, item, sizeof(item));
@@ -420,7 +420,7 @@ public int ModelMenu(Handle menu, MenuAction action, int param1, int param2)
 		{
 			
 		}
-		case MenuAction_End: 
+		case MenuAction_End:
 		{
 			CloseHandle(menu);
 		}
@@ -429,11 +429,11 @@ public int ModelMenu(Handle menu, MenuAction action, int param1, int param2)
 	return 0;
 }
 
-public int VoiceMenu(Handle menu, MenuAction action, int param1, int param2) 
+public int VoiceMenu(Handle menu, MenuAction action, int param1, int param2)
 {
-	switch (action) 
+	switch (action)
 	{
-		case MenuAction_Select: 
+		case MenuAction_Select:
 		{
 			char item[8];
 			GetMenuItem(menu, param2, item, sizeof(item));
@@ -445,7 +445,7 @@ public int VoiceMenu(Handle menu, MenuAction action, int param1, int param2)
 		{
 			
 		}
-		case MenuAction_End: 
+		case MenuAction_End:
 		{
 			CloseHandle(menu);
 		}
@@ -522,7 +522,7 @@ public Action Timer_LoadCookie(Handle timer, int userid)
 			SetEntityModel(client, sModel);
 		}
 		else if (client && IsClientInGame(client))
-		{ 
+		{
 			PrintToChat(client, "%s Couldn't load your default character. Type \x05!csm \x01to choose your \x03default \x01character.", PLUGIN_PREFIX);
 		}
 	}
@@ -536,10 +536,10 @@ public Action Timer_LoadCookie(Handle timer, int userid)
 public Action Event_PlayerToBot(Handle event, char[] name, bool dontBroadcast)
 {
 	int player = GetClientOfUserId(GetEventInt(event, "player"));
-	int bot    = GetClientOfUserId(GetEventInt(event, "bot")); 
+	int bot    = GetClientOfUserId(GetEventInt(event, "bot"));
 
 	// If bot replace bot (due to bot creation)
-	if (player > 0 && GetClientTeam(player)== 2  &&  IsFakeClient(player) && convarSpawn.BoolValue) 
+	if (player > 0 && GetClientTeam(player)== 2  &&  IsFakeClient(player) && convarSpawn.BoolValue)
 	{
 		int i = GetFewestSurvivor(bot);
 		Survivor s; g_Survivors.GetArray(i, s);
@@ -549,7 +549,7 @@ public Action Event_PlayerToBot(Handle event, char[] name, bool dontBroadcast)
 	return Plugin_Continue;
 }
 
-int GetFewestSurvivor(int clientignore = -1) 
+int GetFewestSurvivor(int clientignore = -1)
 {
 	char Model[128];
 	int[] Survivors = new int[g_Survivors.Length];
@@ -562,7 +562,7 @@ int GetFewestSurvivor(int clientignore = -1)
 			for (int i = 0; i < g_Survivors.Length; i++)
 			{
 				Survivor s; g_Survivors.GetArray(i, s);
-				if (StrEqual(Model, s.model)) 
+				if (StrEqual(Model, s.model))
 					Survivors[i] = Survivors[i] + 1;
 			}		
 		}
@@ -573,7 +573,7 @@ int GetFewestSurvivor(int clientignore = -1)
 	
 	for (int s = 0; s < g_Survivors.Length; s++)
 	{
-		if (Survivors[s] < min) 
+		if (Survivors[s] < min)
 		{
 			minS = s;
 			min  = Survivors[s];
