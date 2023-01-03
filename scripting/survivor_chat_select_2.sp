@@ -23,7 +23,7 @@
 
 ========================================================================================*/
 #pragma semicolon 1
-#define PLUGIN_VERSION "2.2.0"  
+#define PLUGIN_VERSION "2.3.0"
 #define PLUGIN_NAME "Survivor Chat Select 2"
 #define PLUGIN_PREFIX 	"\x01[\x04SCS\x01]"
 
@@ -56,7 +56,7 @@ ConVar convarZoey;
 ConVar convarSpawn;
 ConVar convarAdminsOnly;
 ConVar convarCookies;
-ConVar convarForceNetProps;
+ConVar convarVoiceChangeEnabled;
 
 #define     NICK     	0
 #define     ROCHELLE    1
@@ -81,8 +81,10 @@ public void OnPluginStart()
 	g_hClientID 	= RegClientCookie("Player_Character", "Player's default character ID.", CookieAccess_Protected);
 	g_hClientModel  = RegClientCookie("Player_Model", "Player's default character model.", CookieAccess_Protected);
 
-	RegAdminCmd("sm_csc", InitiateMenuAdmin, ADMFLAG_GENERIC, "Brings up a menu to select a client's character"); 
-	RegConsoleCmd("sm_csm", ShowMenu, "Brings up a menu to select a client's character"); 
+	RegAdminCmd("sm_csc", InitiateMenuAdmin, ADMFLAG_GENERIC, "Brings up a menu to select a client's model"); 
+	RegConsoleCmd("sm_csm", ShowModelMenu, "Brings up a menu to select a client's model");
+	RegConsoleCmd("sm_model", ShowModelMenu, "Brings up a menu to select a client's model");
+	RegConsoleCmd("sm_voice", ShowVoiceMenu, "Brings up a menu to select a client's voice (netprop)");
 	// RegAdminCmd("sm_fileloadtest", FileLoadTest, ADMFLAG_ROOT, "test");
 	
 	HookEvent("player_spawn", Event_PlayerSpawn, EventHookMode_Post);
@@ -92,7 +94,7 @@ public void OnPluginStart()
 	convarZoey 		 = CreateConVar("l4d_scs_zoey", "0","Prop for Zoey. 0: Rochelle (windows), 1: Zoey (linux), 2: Nick (fakezoey)",FCVAR_NOTIFY,true, 0.0, true, 2.0);
 	convarSpawn		 = CreateConVar("l4d_scs_botschange", "1","Change new bots to least prevalent survivor? 1:Enable, 0:Disable",FCVAR_NOTIFY,true, 0.0, true, 1.0);
 	convarCookies	 = CreateConVar("l4d_scs_cookies", "1","Store player's survivor? 1:Enable, 0:Disable",FCVAR_NOTIFY,true, 0.0, true, 1.0);
-	convarForceNetProps	 = CreateConVar("l4d_scs_forcenetprops", "1", "Force netprops (real survivors)",FCVAR_NOTIFY,true, 0.0, true, 1.0);
+	convarVoiceChangeEnabled	 = CreateConVar("l4d_scs_voicechangeenabled", "1", "Enables changing voices",FCVAR_NOTIFY,true, 0.0, true, 1.0);
 
 	AutoExecConfig(true, "l4dscs");
 	
@@ -136,35 +138,39 @@ int GetZoeyProp()
 
 
 // Function changes the survivor
-void SurvivorChange(int client, Survivor survivor, bool save = true)
+void SurvivorModelChange(int client, Survivor survivor, bool save = true)
 {
-	if( client == 0		)  { PrintToServer("You must be in the survivor team to use this command!"); return;}
-	if(!IsSurvivor(client)){ PrintToChat(client, "You must be in the survivor team to use this command!"); 	return; }
+	if( client == 0		)  { PrintToServer("You must be in-game to use this command!"); return;}
 
-	if (IsFakeClient(client))  // if bot, change name
+	if (IsSurvivor(client) && IsPlayerAlive(client))
+		SetEntityModel(client, survivor.model);
+
+	if (convarCookies.BoolValue && save)
 	{
-		SetClientInfo(client, "name", survivor.name);
+		SetClientCookie(client, g_hClientModel, survivor.model);
+		PrintToChat(client, "%s Your \x05default \x01model is now set to \x03%s\x01.", PLUGIN_PREFIX, survivor.name); 
 	}
+}
 
+void SurvivorVoiceChange(int client, Survivor survivor, bool save = true)
+{
+	if( client == 0		)  { PrintToServer("You must be in-game to use this command!"); return;}
 
 	int tempprop = survivor.prop;
 	if (tempprop == ZOEY) {
 		tempprop = GetZoeyProp();
 	}
 
-	if (convarForceNetProps.IntValue == 1) {
+	if (convarVoiceChangeEnabled.IntValue == 1 && IsSurvivor(client) && IsPlayerAlive(client)) {
 		SetEntProp(client, Prop_Send, "m_survivorCharacter", tempprop );
 		ReEquipWeapons(client);
 	}
 
-	SetEntityModel(client, survivor.model);
-	
 	if (convarCookies.BoolValue && save)
 	{
 		char sprop[2]; IntToString(tempprop, sprop, 2);
 		SetClientCookie(client, g_hClientID, sprop);
-		SetClientCookie(client, g_hClientModel, survivor.model);
-		PrintToChat(client, "%s Your \x05default \x01character is now set to \x03%s\x01.", PLUGIN_PREFIX, survivor.name); 
+		PrintToChat(client, "%s Your \x05default \x01voice is now set to \x03%s\x01.", PLUGIN_PREFIX, survivor.name);
 	}
 }	
 
@@ -222,7 +228,7 @@ public Action InitiateMenuAdmin(int client, int args)
 		Survivor s; g_Survivors.GetArray(prop, s);
 
 		for (int i = 0; i < targetCount; ++i) {
-			SurvivorChange(targets[i], s, false);
+			SurvivorModelChange(targets[i], s, false);
 		}
 		
 		if (targetNameML) {
@@ -295,7 +301,7 @@ public Action ShowMenuAdmin(int client, int args)
 { 
 	char sMenuEntry[8]; 
 	
-	Handle menu = CreateMenu(CharMenuAdmin); 
+	Handle menu = CreateMenu(ModelMenuAdmin); 
 	SetMenuTitle(menu, "Choose a character:");
 
 	for (int i = 0; i < g_Survivors.Length; i++) {
@@ -310,7 +316,7 @@ public Action ShowMenuAdmin(int client, int args)
 	return Plugin_Continue;
 } 
 
-public int CharMenuAdmin(Handle menu, MenuAction action, int client, int param2)  
+public int ModelMenuAdmin(Handle menu, MenuAction action, int client, int param2)  
 { 
 	switch (action)  
 	{ 
@@ -320,7 +326,7 @@ public int CharMenuAdmin(Handle menu, MenuAction action, int client, int param2)
 			GetMenuItem(menu, param2, item, sizeof(item));
 
 			Survivor s; g_Survivors.GetArray(StringToInt(item), s);
-			SurvivorChange(g_iSelectedClient[client], s, false); 
+			SurvivorModelChange(g_iSelectedClient[client], s, false); 
 		} 
 		case MenuAction_Cancel: { } 
 		case MenuAction_End:    {CloseHandle(menu); } 
@@ -329,21 +335,11 @@ public int CharMenuAdmin(Handle menu, MenuAction action, int client, int param2)
 	return 0;
 } 
 
-public Action ShowMenu(int client, int args) 
+public Action ShowModelMenu(int client, int args) 
 {
 	if (client == 0) 
 	{
 		ReplyToCommand(client, "[SCS] Character Select Menu is in-game only.");
-		return Plugin_Continue;
-	}
-	if (GetClientTeam(client) != 2)
-	{
-		ReplyToCommand(client, "[SCS] Character Select Menu is only available to survivors.");
-		return Plugin_Continue;
-	}
-	if (!IsPlayerAlive(client)) 
-	{
-		ReplyToCommand(client, "[SCS] You must be alive to use the Character Select Menu!");
 		return Plugin_Continue;
 	}
 	if (GetUserFlagBits(client) == 0 && convarAdminsOnly.BoolValue)
@@ -353,8 +349,8 @@ public Action ShowMenu(int client, int args)
 	}
 	char sMenuEntry[8];
 	
-	Handle menu = CreateMenu(CharMenu);
-	SetMenuTitle(menu, "Choose a character:");
+	Handle menu = CreateMenu(ModelMenu);
+	SetMenuTitle(menu, "Choose a model:");
 
 	for (int i = 0; i < g_Survivors.Length; i++) {
 		Survivor s; g_Survivors.GetArray(i, s);
@@ -370,7 +366,45 @@ public Action ShowMenu(int client, int args)
 	return Plugin_Continue;
 }
 
-public int CharMenu(Handle menu, MenuAction action, int param1, int param2) 
+public Action ShowVoiceMenu(int client, int args) 
+{
+	if (client == 0) 
+	{
+		ReplyToCommand(client, "[SCS] Character Select Menu is in-game only.");
+		return Plugin_Continue;
+	}
+	if (GetUserFlagBits(client) == 0 && convarAdminsOnly.BoolValue)
+	{
+		ReplyToCommand(client, "[SCS] Character Select Menu is only available to admins.");
+		return Plugin_Continue;
+	}
+	if (!convarVoiceChangeEnabled.BoolValue)
+	{
+		ReplyToCommand(client, "[SCS] Voice Select Menu is currently disabled.");
+		return Plugin_Continue;
+	}
+
+	char sMenuEntry[8];
+	
+	Handle menu = CreateMenu(VoiceMenu);
+	SetMenuTitle(menu, "Choose a voice:");
+
+	for (int i = 0; i < 8; i++) {
+		Survivor s; g_Survivors.GetArray(i, s);
+		int flags = ReadFlagString(s.adminflags);
+		if (GetUserFlagBits(client) & flags == flags) {
+			IntToString(i, sMenuEntry, sizeof(sMenuEntry)); 
+			AddMenuItem(menu, sMenuEntry, s.name);
+		}
+	}
+	
+	SetMenuExitButton(menu, false);
+	SetMenuPagination(menu, MENU_NO_PAGINATION);
+	DisplayMenu(menu, client, MENU_TIME_FOREVER);
+	return Plugin_Continue;
+}
+
+public int ModelMenu(Handle menu, MenuAction action, int param1, int param2) 
 {
 	switch (action) 
 	{
@@ -380,7 +414,32 @@ public int CharMenu(Handle menu, MenuAction action, int param1, int param2)
 			GetMenuItem(menu, param2, item, sizeof(item));
 
 			Survivor s; g_Survivors.GetArray(StringToInt(item), s);
-			SurvivorChange(param1, s, true);
+			SurvivorModelChange(param1, s, true);
+		}
+		case MenuAction_Cancel:
+		{
+			
+		}
+		case MenuAction_End: 
+		{
+			CloseHandle(menu);
+		}
+	}
+
+	return 0;
+}
+
+public int VoiceMenu(Handle menu, MenuAction action, int param1, int param2) 
+{
+	switch (action) 
+	{
+		case MenuAction_Select: 
+		{
+			char item[8];
+			GetMenuItem(menu, param2, item, sizeof(item));
+
+			Survivor s; g_Survivors.GetArray(StringToInt(item), s);
+			SurvivorVoiceChange(param1, s, true);
 		}
 		case MenuAction_Cancel:
 		{
@@ -458,7 +517,7 @@ public Action Timer_LoadCookie(Handle timer, int userid)
 	
 		if(strlen(sID) && strlen(sModel) && IsModelPrecached(sModel))
 		{
-			if (convarForceNetProps.IntValue == 1)
+			if (convarVoiceChangeEnabled.IntValue == 1)
 				SetEntProp(client, Prop_Send, "m_survivorCharacter", StringToInt(sID));
 			SetEntityModel(client, sModel);
 		}
@@ -484,7 +543,7 @@ public Action Event_PlayerToBot(Handle event, char[] name, bool dontBroadcast)
 	{
 		int i = GetFewestSurvivor(bot);
 		Survivor s; g_Survivors.GetArray(i, s);
-		SurvivorChange(bot, s, true);
+		SurvivorModelChange(bot, s, true);
 	}
 
 	return Plugin_Continue;
