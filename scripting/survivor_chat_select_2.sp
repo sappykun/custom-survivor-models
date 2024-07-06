@@ -142,8 +142,10 @@ void SurvivorModelChange(int client, Survivor survivor, bool save = true)
 {
 	if( client == 0		)  { PrintToServer("You must be in-game to use this command!"); return;}
 
-	if (IsSurvivor(client) && IsPlayerAlive(client))
+	if (IsSurvivor(client) && IsPlayerAlive(client)) {
 		SetEntityModel(client, survivor.model);
+		ReEquipWeapons(client);
+	}
 
 	if (convarCookies.BoolValue && save)
 	{
@@ -518,8 +520,10 @@ public Action Timer_LoadCookie(Handle timer, int userid)
 		if (strlen(sID) && convarVoiceChangeEnabled.BoolValue)
 			SetEntProp(client, Prop_Send, "m_survivorCharacter", StringToInt(sID));
 
-		if(strlen(sModel) && IsModelPrecached(sModel))
+		if(strlen(sModel) && IsModelPrecached(sModel)) {
 			SetEntityModel(client, sModel);
+			ReEquipWeapons(client);
+		}
 	}
 	return Plugin_Stop;
 }
