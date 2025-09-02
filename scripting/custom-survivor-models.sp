@@ -29,7 +29,7 @@
 #pragma semicolon 1
 #pragma newdecls required
 
-#define PLUGIN_VERSION "3.0.1"
+#define PLUGIN_VERSION "3.0.2"
 #define PLUGIN_NAME "Custom Survivor Models"
 #define PLUGIN_PREFIX 	"\x01[\x04CSM\x01]"
 
@@ -110,7 +110,7 @@ public void OnPluginStart()
 	Survivor f; f.Create("Francis", "models/survivors/survivor_biker.mdl", ""); g_Survivors.PushArray(f);
 	Survivor l; l.Create("Louis", "models/survivors/survivor_manager.mdl", ""); g_Survivors.PushArray(l);
 
-	LoadSurvivorsFromConfigFile("csm.models.cfg");
+	LoadSurvivorsFromConfigFile("configs/csm.models.cfg");
 }
 
 // *********************************************************************************
