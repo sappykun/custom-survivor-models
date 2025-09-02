@@ -10,9 +10,9 @@ char g_sSurvivorVoicePaths[8][] = {	"gambler", "producer", "coach", "mechanic",
 
 public Plugin myinfo =
 {
-	name = "CSM Fall Scream Fix",
+	name = "[L4D2] Fall Scream Fix",
 	author = "Sappykun",
-	description = "Quick and dirty hack for falling survivor screams in CSM",
+	description = "Quick and dirty hack for falling survivor screams when using plugins to change models",
 	version = "1.0.0",
 	url = ""
 }
