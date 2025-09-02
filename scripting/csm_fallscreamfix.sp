@@ -10,9 +10,9 @@ char g_sSurvivorVoicePaths[8][] = {	"gambler", "producer", "coach", "mechanic",
 
 public Plugin myinfo =
 {
-	name = "SCS2 Fall Scream Fix",
+	name = "CSM Fall Scream Fix",
 	author = "Sappykun",
-	description = "Quick and dirty hack for falling survivor screams in SCS2",
+	description = "Quick and dirty hack for falling survivor screams in CSM",
 	version = "1.0.0",
 	url = ""
 }

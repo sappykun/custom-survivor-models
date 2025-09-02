@@ -1,4 +1,4 @@
-# [L4D2] Survivor Chat Select 2
+# [L4D2] Custom Survivor Models
 
 A Sourcemod plugin that allows you to change your model in-game. You can choose from all 8 available survivors on campaigns that use the L4D2 survivor set, and the 4 original survivors on campaigns that use the L4D1 survivor set.  The plugin will keep track of which model you select, even if you leave and rejoin.
 
@@ -21,11 +21,9 @@ This particular fork adds:
 
 `sm_csm`- Opens the character select menu.
 
-`sm_csc` - Forces a model onto a player for the remainder of the map. Admin only. 
+`sm_forcemodel`/`sm_fm` - Forces a model onto a player for the remainder of the map. Admin only. 
 
 ## CVARS
-
-`l4d_csm_admins_only [0/1]` - Should admins get exclusive access to the CSM menu?
 
 `l4d_scs_botschange [0/1]` - Should new bots spawn as the least prevalent survivor?
 
@@ -40,28 +38,23 @@ This particular fork adds:
 A custom survivor config should look like the following:
 
 ```
-"SurvivorsCustom"
+"CustomModelConfig"
 {
-	"Reimu Hakurei"
+	"AdminFlags"
 	{
-		"model" "models/serioussaturdays/survivors/reimu_v1/reimu_v1.mdl"
-		"prop"	1
-		"custom" 1
-		"adminflags" ""
+		"My Custom Admin Guy"						"z"
 	}
-	// etc.
+	"Survivors"
+	{
+		"My Custom Guy"						"models/csm/guy_v1/m.mdl"
+		"My Custom Admin Guy"				"models/csm/guyadmin_v1/m.mdl"
+	}
 }
 ```
 
-The first key is the display name of the character.
+In this case, there will be two survivors added to CSM. My Custom Guy will show up for everyone. My Custom Admin Guy will only shown up for admins that have the "z" flag.
 
-`model` - the filepath of the model to use. 
-
-`prop` - the underlying character that this model will use. 0-3 are Nick, Rochelle, Coach, and Ellis. 4-7 are Bill, Zoey, Francis, and Louis.
-
-`custom` - currently unused.
-
-`adminflags` - which flags are required to use this model. For example, a value of "c" restricts the model only to admins that are able to kick other players.
+It is recommended to keep filenames as short as possible.  I would also recommend [Stringtable Cleanup](https://github.com/sappykun/stringtable-cleanup) if you plan on adding a lot of downloadables.
 
 ## TODO
 
@@ -83,5 +76,5 @@ A) L4D2 survivors are only usable on campaigns that use the L4D2 survivors. If y
 
 Q) How do I send out the custom assets for my models?
 
-A) This plugin doesn't handle that. You will need a fastdl server and something like Easy Downloader to send out custom files to clients.
-https://forums.alliedmods.net/showthread.php?t=292207
+A) This plugin doesn't handle that. You will need a fastdl server and something like [Easy Downloader](https://forums.alliedmods.net/showthread.php?t=292207) to send out custom files to clients.
+

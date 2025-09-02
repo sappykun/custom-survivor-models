@@ -22,30 +22,27 @@
 *   Link    :   "https://forums.alliedmods.net/showpost.php?p=2714846&postcount=807"
 
 ========================================================================================*/
-#pragma semicolon 1
-#define PLUGIN_VERSION "2.3.0"
-#define PLUGIN_NAME "Survivor Chat Select 2"
-#define PLUGIN_PREFIX 	"\x01[\x04SCS\x01]"
-
-#include <sourcemod>
 #include <sdktools>
 #include <clientprefs>
 #include <adminmenu>
 
+#pragma semicolon 1
 #pragma newdecls required
+
+#define PLUGIN_VERSION "3.0.0"
+#define PLUGIN_NAME "Custom Survivor Models"
+#define PLUGIN_PREFIX 	"\x01[\x04CSM\x01]"
 
 enum struct Survivor {
 	char name[MAX_NAME_LENGTH];
 	char model[PLATFORM_MAX_PATH];
-	int prop;
-	char adminflags[16];
+	char adminflags[32];
 
-	void Create(char name[MAX_NAME_LENGTH], char model[PLATFORM_MAX_PATH], int prop, char adminflags[16])
+	void Create(char name[MAX_NAME_LENGTH], char model[PLATFORM_MAX_PATH], char adminflags[32])
 	{
 		strcopy(this.name, MAX_NAME_LENGTH, name);
 		strcopy(this.model, PLATFORM_MAX_PATH, model);
-		this.prop = prop;
-		strcopy(this.adminflags, 16, adminflags);
+		strcopy(this.adminflags, 32, adminflags);
 	}
 }
 
@@ -54,18 +51,16 @@ ArrayList g_Survivors;
 
 ConVar convarZoey;
 ConVar convarSpawn;
-ConVar convarAdminsOnly;
 ConVar convarCookies;
 ConVar convarVoiceChangeEnabled;
 
-#define     NICK     	0
-#define     ROCHELLE    1
-#define     ZOEY     	5
+#define NICK		0
+#define ROCHELLE	1
+#define ZOEY		5
 
 int    g_iSelectedClient[MAXPLAYERS+1];
 Handle g_hClientID;
 Handle g_hClientModel;
-
 
 public Plugin myinfo =
 {
@@ -81,22 +76,21 @@ public void OnPluginStart()
 	g_hClientID 	= RegClientCookie("Player_Character", "Player's default character ID.", CookieAccess_Protected);
 	g_hClientModel  = RegClientCookie("Player_Model", "Player's default character model.", CookieAccess_Protected);
 
-	RegAdminCmd("sm_csc", InitiateMenuAdmin, ADMFLAG_GENERIC, "Brings up a menu to select a client's model");
 	RegConsoleCmd("sm_csm", ShowModelMenu, "Brings up a menu to select a client's model");
 	RegConsoleCmd("sm_model", ShowModelMenu, "Brings up a menu to select a client's model");
 	RegConsoleCmd("sm_voice", ShowVoiceMenu, "Brings up a menu to select a client's voice (netprop)");
-	// RegAdminCmd("sm_fileloadtest", FileLoadTest, ADMFLAG_ROOT, "test");
-	
+	RegAdminCmd("sm_forcemodel", InitiateMenuAdmin, ADMFLAG_GENERIC, "Brings up a menu to select a client's model");
+	RegAdminCmd("sm_fm", InitiateMenuAdmin, ADMFLAG_GENERIC, "Brings up a menu to select a client's model");
+		
 	HookEvent("player_spawn", Event_PlayerSpawn, EventHookMode_Post);
 	HookEvent("player_bot_replace", Event_PlayerToBot, EventHookMode_Post);
 
-	convarAdminsOnly = CreateConVar("l4d_csm_admins_only", "1","Changes access to the sm_csm command. 1 = Admin access only.",FCVAR_NOTIFY,true, 0.0, true, 1.0);		
-	convarZoey 		 = CreateConVar("l4d_scs_zoey", "0","Prop for Zoey. 0: Rochelle (windows), 1: Zoey (linux), 2: Nick (fakezoey)",FCVAR_NOTIFY,true, 0.0, true, 2.0);
-	convarSpawn		 = CreateConVar("l4d_scs_botschange", "1","Change new bots to least prevalent survivor? 1:Enable, 0:Disable",FCVAR_NOTIFY,true, 0.0, true, 1.0);
-	convarCookies	 = CreateConVar("l4d_scs_cookies", "1","Store player's survivor? 1:Enable, 0:Disable",FCVAR_NOTIFY,true, 0.0, true, 1.0);
-	convarVoiceChangeEnabled	 = CreateConVar("l4d_scs_voicechangeenabled", "1", "Enables changing voices",FCVAR_NOTIFY,true, 0.0, true, 1.0);
+	convarZoey 		 = CreateConVar("l4d_csm_zoey", "0","Prop for Zoey. 0: Rochelle (windows), 1: Zoey (linux), 2: Nick (fakezoey)",FCVAR_NOTIFY,true, 0.0, true, 2.0);
+	convarSpawn		 = CreateConVar("l4d_csm_botschange", "1","Change new bots to least prevalent survivor? 1:Enable, 0:Disable",FCVAR_NOTIFY,true, 0.0, true, 1.0);
+	convarCookies	 = CreateConVar("l4d_csm_cookies", "1","Store player's survivor? 1:Enable, 0:Disable",FCVAR_NOTIFY,true, 0.0, true, 1.0);
+	convarVoiceChangeEnabled	 = CreateConVar("l4d_csm_voicechangeenabled", "1", "Enables changing voices",FCVAR_NOTIFY,true, 0.0, true, 1.0);
 
-	AutoExecConfig(true, "l4dscs");
+	AutoExecConfig(true, "l4dcsm");
 	
 	/* Account for late loading */
 	TopMenu topmenu;
@@ -107,22 +101,16 @@ public void OnPluginStart()
 	
 	g_Survivors = new ArrayList(sizeof(Survivor));
 
-	Survivor n; n.Create("Nick", "models/survivors/survivor_gambler.mdl", 0, ""); g_Survivors.PushArray(n);
-	Survivor r; r.Create("Rochelle", "models/survivors/survivor_producer.mdl", 1, ""); g_Survivors.PushArray(r);
-	Survivor c; c.Create("Coach", "models/survivors/survivor_coach.mdl", 2, ""); g_Survivors.PushArray(c);
-	Survivor e; e.Create("Ellis", "models/survivors/survivor_mechanic.mdl", 3, ""); g_Survivors.PushArray(e);
-	Survivor b; b.Create("Bill", "models/survivors/survivor_namvet.mdl", 4, ""); g_Survivors.PushArray(b);
-	Survivor z; z.Create("Zoey", "models/survivors/survivor_teenangst.mdl", 5, ""); g_Survivors.PushArray(z);
-	Survivor f; f.Create("Francis", "models/survivors/survivor_biker.mdl", 6, ""); g_Survivors.PushArray(f);
-	Survivor l; l.Create("Louis", "models/survivors/survivor_manager.mdl", 7, ""); g_Survivors.PushArray(l);
+	Survivor n; n.Create("Nick", "models/survivors/survivor_gambler.mdl", ""); g_Survivors.PushArray(n);
+	Survivor r; r.Create("Rochelle", "models/survivors/survivor_producer.mdl", ""); g_Survivors.PushArray(r);
+	Survivor c; c.Create("Coach", "models/survivors/survivor_coach.mdl", ""); g_Survivors.PushArray(c);
+	Survivor e; e.Create("Ellis", "models/survivors/survivor_mechanic.mdl", ""); g_Survivors.PushArray(e);
+	Survivor b; b.Create("Bill", "models/survivors/survivor_namvet.mdl", ""); g_Survivors.PushArray(b);
+	Survivor z; z.Create("Zoey", "models/survivors/survivor_teenangst.mdl", ""); g_Survivors.PushArray(z);
+	Survivor f; f.Create("Francis", "models/survivors/survivor_biker.mdl", ""); g_Survivors.PushArray(f);
+	Survivor l; l.Create("Louis", "models/survivors/survivor_manager.mdl", ""); g_Survivors.PushArray(l);
 
-	LoadSurvivorsFromConfigFile("configs/scs.survivors.custom.txt");
-}
-
-public Action FileLoadTest(int client, int args)
-{
-	__DebugPrintLoadedModels();
-	return Plugin_Continue;
+	LoadSurvivorsFromConfigFile("configs/csm.survivors.custom.cfg");
 }
 
 // *********************************************************************************
@@ -150,15 +138,15 @@ void SurvivorModelChange(int client, Survivor survivor, bool save = true)
 	if (convarCookies.BoolValue && save)
 	{
 		SetClientCookie(client, g_hClientModel, survivor.model);
-		PrintToChat(client, "%s Your \x05default \x01model is now set to \x03%s\x01.", PLUGIN_PREFIX, survivor.name);
+		PrintToChat(client, "%s Your\x05 default\x01 model is now set to \x03%s\x01.", PLUGIN_PREFIX, survivor.name);
 	}
 }
 
-void SurvivorVoiceChange(int client, Survivor survivor, bool save = true)
+void SurvivorVoiceChange(int client, int voice, bool save = true)
 {
 	if( client == 0		)  { PrintToServer("You must be in-game to use this command!"); return;}
 
-	int tempprop = survivor.prop;
+	int tempprop = voice;
 	if (tempprop == ZOEY) {
 		tempprop = GetZoeyProp();
 	}
@@ -171,8 +159,9 @@ void SurvivorVoiceChange(int client, Survivor survivor, bool save = true)
 	if (convarCookies.BoolValue && save)
 	{
 		char sprop[2]; IntToString(tempprop, sprop, 2);
+		Survivor s; g_Survivors.GetArray(voice, s);
 		SetClientCookie(client, g_hClientID, sprop);
-		PrintToChat(client, "%s Your \x05default \x01voice is now set to \x03%s\x01.", PLUGIN_PREFIX, survivor.name);
+		PrintToChat(client, "%s Your \x05default \x01voice is now set to \x03%s\x01.", PLUGIN_PREFIX, s.name);
 	}
 }	
 
@@ -339,16 +328,14 @@ public int ModelMenuAdmin(Handle menu, MenuAction action, int client, int param2
 
 public Action ShowModelMenu(int client, int args)
 {
-	if (client == 0)
-	{
-		ReplyToCommand(client, "[SCS] Character Select Menu is in-game only.");
+	if (client == 0) {
+		for (int i = 0; i < g_Survivors.Length; i++) {
+			Survivor s; g_Survivors.GetArray(i, s);
+			ReplyToCommand(client, "%s %s %s", s.name, s.model, s.adminflags);
+		}
 		return Plugin_Continue;
 	}
-	if (GetUserFlagBits(client) == 0 && convarAdminsOnly.BoolValue)
-	{
-		ReplyToCommand(client, "[SCS] Character Select Menu is only available to admins.");
-		return Plugin_Continue;
-	}
+	
 	char sMenuEntry[8];
 	
 	Handle menu = CreateMenu(ModelMenu);
@@ -362,6 +349,7 @@ public Action ShowModelMenu(int client, int args)
 			AddMenuItem(menu, sMenuEntry, s.name);
 		}
 	}
+
 	
 	SetMenuExitButton(menu, true);
 	DisplayMenu(menu, client, MENU_TIME_FOREVER);
@@ -372,17 +360,12 @@ public Action ShowVoiceMenu(int client, int args)
 {
 	if (client == 0)
 	{
-		ReplyToCommand(client, "[SCS] Character Select Menu is in-game only.");
-		return Plugin_Continue;
-	}
-	if (GetUserFlagBits(client) == 0 && convarAdminsOnly.BoolValue)
-	{
-		ReplyToCommand(client, "[SCS] Character Select Menu is only available to admins.");
+		ReplyToCommand(client, "%s Voice Select menu is in-game only.", PLUGIN_PREFIX);
 		return Plugin_Continue;
 	}
 	if (!convarVoiceChangeEnabled.BoolValue)
 	{
-		ReplyToCommand(client, "[SCS] Voice Select Menu is currently disabled.");
+		ReplyToCommand(client, "%s Voice Select Menu is currently disabled.", PLUGIN_PREFIX);
 		return Plugin_Continue;
 	}
 
@@ -399,7 +382,7 @@ public Action ShowVoiceMenu(int client, int args)
 			AddMenuItem(menu, sMenuEntry, s.name);
 		}
 	}
-	
+
 	SetMenuExitButton(menu, false);
 	SetMenuPagination(menu, MENU_NO_PAGINATION);
 	DisplayMenu(menu, client, MENU_TIME_FOREVER);
@@ -441,7 +424,7 @@ public int VoiceMenu(Handle menu, MenuAction action, int param1, int param2)
 			GetMenuItem(menu, param2, item, sizeof(item));
 
 			Survivor s; g_Survivors.GetArray(StringToInt(item), s);
-			SurvivorVoiceChange(param1, s, true);
+			SurvivorVoiceChange(param1, StringToInt(item), true);
 		}
 		case MenuAction_Cancel:
 		{
@@ -814,39 +797,56 @@ int GetWeaponOffset(char[] weapon)
 	return weapon_offset;
 }
 
-void SCS_BrowseKeyValues(KeyValues kv)
-{
-	if (kv.GotoFirstSubKey()) {
-		do
-		{
-			Survivor s;
-			kv.GetSectionName(s.name, sizeof(s.name));
-			kv.GetString("model", s.model, sizeof(s.model));
-			s.prop = kv.GetNum("prop");
-			kv.GetString("adminflags", s.adminflags, sizeof(s.adminflags));
-
-			g_Survivors.PushArray(s);
-
-		} while (kv.GotoNextKey(false));
-	}
-}
-
 void LoadSurvivorsFromConfigFile(const char[] filepath)
 {
 	char path[PLATFORM_MAX_PATH];
 	BuildPath(Path_SM, path, sizeof(path), filepath);
-	KeyValues kv = new KeyValues("Survivors");
-
-	if (kv.ImportFromFile(path))
-	{
-		SCS_BrowseKeyValues(kv);
-	}
-	else
-	{
+	KeyValues kv = new KeyValues("CustomModelConfig");
+	
+	if (!kv.ImportFromFile(path)) {
 		LogError("Unable to read %s as KV file. Make sure it's properly formatted.", path);
+		delete kv;
+		return;
+	}
+	
+	StringMap adminflags = new StringMap();
+
+	if (kv.JumpToKey("AdminFlags")) {
+		if (kv.GotoFirstSubKey(false)) {
+			do {
+				char name[MAX_NAME_LENGTH];
+				char flags[32];
+				kv.GetSectionName(name, sizeof(name));
+				kv.GetString(NULL_STRING, flags, sizeof(flags));
+				adminflags.SetString(name, flags, true);
+
+			} while (kv.GotoNextKey(false));
+		}
+	}
+	
+	kv.GoBack();
+
+	if (kv.JumpToKey("Survivors")) {
+		if (kv.GotoFirstSubKey(false)) {
+			do {
+				Survivor s;
+				char flags[32];
+				kv.GetSectionName(s.name, sizeof(s.name));
+				kv.GetString(NULL_STRING, s.model, sizeof(s.model));
+				
+				if (adminflags.GetString(s.name, flags, sizeof(flags)))
+					strcopy(s.adminflags, 32, flags);
+				else
+					strcopy(s.adminflags, 32, NULL_STRING);
+
+				g_Survivors.PushArray(s);
+
+			} while (kv.GotoNextKey(false));
+		}
 	}
 
 	delete kv;
+	delete adminflags;
 }
 
 void PrecacheModels()
@@ -857,13 +857,5 @@ void PrecacheModels()
 		Survivor s; g_Survivors.GetArray(i, s);
 		if (!IsModelPrecached(s.model))
 			PrecacheModel(s.model, false);
-	}
-}
-
-void __DebugPrintLoadedModels()
-{
-	for (int i = 0; i < g_Survivors.Length; i++) {
-		Survivor s; g_Survivors.GetArray(i, s);
-		PrintToServer("%s %s %i", s.name, s.model, s.prop);
 	}
 }
