@@ -25,13 +25,13 @@ This particular fork adds:
 
 ## CVARS
 
-`l4d_scs_botschange [0/1]` - Should new bots spawn as the least prevalent survivor?
+`l4d_csm_botschange [0/1]` - Should new bots spawn as the least prevalent survivor?
 
-`l4d_scs_cookies [0/1]` - Toggles cookie storage
+`l4d_csm_cookies [0/1]` - Toggles cookie storage
 
-`l4d_scs_zoey [0/1/2]` - Which prop does Zoey get? 0 is Rochelle (for Windows servers), 1 is Zoey (for Linux servers), 2 is Nick (for Windows servers with FakeZoey)
+`l4d_csm_zoey [0/1/2]` - Which prop does Zoey get? 0 is Rochelle (for Windows servers), 1 is Zoey (for Linux servers), 2 is Nick (for Windows servers with FakeZoey)
 
-`l4d_scs_forcenetprops [0/1]` - Do we want to change the actual survivor (netprop) or just their model? Setting this to 0 fixes scoring issues in Versus.
+`l4d_csm_forcenetprops [0/1]` - Do we want to change the actual survivor (netprop) or just their model? Setting this to 0 fixes scoring issues in Versus.
 
 ## CONFIGURATION
 
