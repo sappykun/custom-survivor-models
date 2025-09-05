@@ -29,7 +29,7 @@
 #pragma semicolon 1
 #pragma newdecls required
 
-#define PLUGIN_VERSION "3.0.2"
+#define PLUGIN_VERSION "3.1.0"
 #define PLUGIN_NAME "Custom Survivor Models"
 #define PLUGIN_PREFIX 	"\x01[\x04CSM\x01]"
 
@@ -53,6 +53,7 @@ ConVar convarZoey;
 ConVar convarSpawn;
 ConVar convarCookies;
 ConVar convarVoiceChangeEnabled;
+ConVar convarPreload;
 
 #define NICK		0
 #define ROCHELLE	1
@@ -78,17 +79,21 @@ public void OnPluginStart()
 
 	RegConsoleCmd("sm_csm", ShowModelMenu, "Brings up a menu to select a client's model");
 	RegConsoleCmd("sm_model", ShowModelMenu, "Brings up a menu to select a client's model");
+	RegConsoleCmd("sm_models", ShowModelMenu, "Brings up a menu to select a client's model");
 	RegConsoleCmd("sm_voice", ShowVoiceMenu, "Brings up a menu to select a client's voice (netprop)");
+	RegConsoleCmd("sm_voices", ShowVoiceMenu, "Brings up a menu to select a client's voice (netprop)");
 	RegAdminCmd("sm_forcemodel", InitiateMenuAdmin, ADMFLAG_GENERIC, "Brings up a menu to select a client's model");
 	RegAdminCmd("sm_fm", InitiateMenuAdmin, ADMFLAG_GENERIC, "Brings up a menu to select a client's model");
+	RegAdminCmd("sm_csc", InitiateMenuAdmin, ADMFLAG_GENERIC, "Brings up a menu to select a client's model");
 		
 	HookEvent("player_spawn", Event_PlayerSpawn, EventHookMode_Post);
 	HookEvent("player_bot_replace", Event_PlayerToBot, EventHookMode_Post);
 
-	convarZoey 		 = CreateConVar("l4d_csm_zoey", "0","Prop for Zoey. 0: Rochelle (windows), 1: Zoey (linux), 2: Nick (fakezoey)",FCVAR_NOTIFY,true, 0.0, true, 2.0);
-	convarSpawn		 = CreateConVar("l4d_csm_botschange", "1","Change new bots to least prevalent survivor? 1:Enable, 0:Disable",FCVAR_NOTIFY,true, 0.0, true, 1.0);
-	convarCookies	 = CreateConVar("l4d_csm_cookies", "1","Store player's survivor? 1:Enable, 0:Disable",FCVAR_NOTIFY,true, 0.0, true, 1.0);
-	convarVoiceChangeEnabled	 = CreateConVar("l4d_csm_voicechangeenabled", "1", "Enables changing voices",FCVAR_NOTIFY,true, 0.0, true, 1.0);
+	convarZoey = CreateConVar("l4d_csm_zoey", "0","Prop for Zoey. 0: Rochelle (windows), 1: Zoey (linux), 2: Nick (fakezoey)",FCVAR_NOTIFY,true, 0.0, true, 2.0);
+	convarSpawn = CreateConVar("l4d_csm_botschange", "1","Change new bots to least prevalent survivor? 1:Enable, 0:Disable",FCVAR_NOTIFY,true, 0.0, true, 1.0);
+	convarCookies = CreateConVar("l4d_csm_cookies", "1","Store player's survivor? 1:Enable, 0:Disable",FCVAR_NOTIFY,true, 0.0, true, 1.0);
+	convarVoiceChangeEnabled = CreateConVar("l4d_csm_voicechangeenabled", "1", "Enables changing voices",FCVAR_NOTIFY,true, 0.0, true, 1.0);
+	convarPreload = CreateConVar("l4d_csm_preloadmodels", "0", "Preloads models on map start.\n\t0 - uses less memory on the client, but introduces a hitch when selecting a model for the first time.\n\t1 - uses more memory on the client, but removes the hitch.",FCVAR_NOTIFY,true, 0.0, true, 1.0);
 
 	AutoExecConfig(true, "l4dcsm");
 	
@@ -165,7 +170,7 @@ void SurvivorVoiceChange(int client, int voice, bool save = true)
 	}
 }	
 
-public void OnMapStart()
+public void OnConfigsExecuted()
 {
 	// TODO: This currently just precaches .mdl files, which prevents
 	// server crashes.  To prevent ERROR signs, all model files
@@ -859,6 +864,6 @@ void PrecacheModels()
 	for (int i = 0; i < g_Survivors.Length; i++) {
 		Survivor s; g_Survivors.GetArray(i, s);
 		if (!IsModelPrecached(s.model))
-			PrecacheModel(s.model, false);
+			PrecacheModel(s.model, convarPreload.BoolValue);
 	}
 }
